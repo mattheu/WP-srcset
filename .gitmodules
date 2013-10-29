@@ -1,0 +1,3 @@
+[submodule "srcset-polyfill"]
+	path = srcset-polyfill
+	url = https://github.com/borismus/srcset-polyfill
