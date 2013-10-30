@@ -135,14 +135,14 @@ class WPThumb_Retina {
 	 */
 	function get_alt_img_src( $attachment_id, Array $size, $multiplier ) {
 
-		$original_image = wp_get_attachment_image_src( $attachment_id, 'full' );
-		
+		$original_image = @getimagesize( get_attached_file( $attachment_id ) );
+
 		$alt_size = array( 
 			'width'  => $size['width']  * $multiplier,
 			'height' => $size['height'] * $multiplier,
 		);
 			
-		if ( $original_image[1] < $alt_size['width'] || $original_image[2] < $alt_size['height'] )
+		if ( $original_image[0] < $alt_size['width'] || $original_image[1] < $alt_size['height'] )
 			return null;
 
 		return wpthumb( 
