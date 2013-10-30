@@ -91,10 +91,11 @@ class WPThumb_Retina {
 			
 			$attr['src'] = $requested_image[0];
 			
-			$srcset = array( 
-				sprintf( '%s 2x', $this->get_alt_img_src( $attachment_id,  $size_args, 2 ) )
-			);				
-			
+			$srcset = array();
+
+			if ( $src = $this->get_alt_img_src( $attachment_id,  $size_args, 2 ) )
+				array_push( $srcset, sprintf( '%s 2x', $src ) );
+				
 			$attr['srcset'] = implode( ', ', $srcset );		
 
 			return $attr;
@@ -112,9 +113,10 @@ class WPThumb_Retina {
 
 		$attr['src'] = $requested_image[0];
 			
-		$srcset = array( 
-			sprintf( '%s 2x', $this->get_alt_img_src( $attachment_id, $size_args, 2 ) )
-		);	
+		$srcset = array();
+
+		if ( $src = $this->get_alt_img_src( $attachment_id,  $size_args, 2 ) )
+			array_push( $srcset, sprintf( '%s 2x', $src ) );
 			
 		$html = preg_replace( '/src="\w*"/', 'src="' . $src . '"', $html );
 		$html = str_replace( '/>', 'srcset=' . implode( ', ', $srcset ) . ' />', $html );
@@ -139,7 +141,7 @@ class WPThumb_Retina {
 			'width'  => $size['width']  * $multiplier,
 			'height' => $size['height'] * $multiplier,
 		);
-		
+			
 		if ( $original_image[1] < $alt_size['width'] || $original_image[2] < $alt_size['height'] )
 			return null;
 
