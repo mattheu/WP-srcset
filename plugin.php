@@ -1,9 +1,9 @@
 <?php
 
 /*
-Plugin Name: WPThumb Retina
-Description: Retinafy your images.
-Version: 0.1
+Plugin Name: WPThumb Srcset
+Description: Automatic high resolution retina images using srcset.
+Version: 1.0
 Author: Human Made Limited
 Author URI: http://hmn.md/
 */
@@ -25,46 +25,45 @@ Author URI: http://hmn.md/
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-class WPThumb_Retina {
+class HM_WordPress_Srcset {
 
-	private $plugin_url; 
-	private $placeholder; 
-	private $original_images = array(); 
+	private $plugin_url;
+	private $multipliers;
 
 	function __construct() {
 
-		$this->plugin_url = plugin_dir_url( __FILE__ );
-		$this->placeholder = $this->plugin_url . 'blank.gif';
+		$this->plugin_url  = plugin_dir_url( __FILE__ );
+		$this->multipliers = apply_filters( 'hm_wp_srcset', array( 2, 3 ) );
 
-		register_activation_hook( __FILE__ , array( $this, 'plugin_activation_check' ) ); 
+		register_activation_hook( __FILE__ , array( $this, 'plugin_activation_check' ) );
 
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 
-		add_filter( 'image_downsize',  array( $this, 'action' ), 100, 3 );
+		add_filter( 'image_downsize',  array( $this, 'image_downsize' ), 100, 3 );
 
 		add_filter( 'image_send_to_editor', array( $this, 'image_send_to_editor' ), 100, 8 );
 		add_filter( 'tiny_mce_before_init', array( $this, 'modify_mce_options' ), 100 );
 
 	}
 
-	/** 
-	 * plugin_activation_check() 
-	 * 
-	 * Replace "plugin" with the name of your plugin 
-	 */ 
-	function plugin_activation_check() { 
-		
-		if ( version_compare( PHP_VERSION, '5.3', '<' ) ) { 
+	/**
+	 * plugin_activation_check()
+	 *
+	 * Replace "plugin" with the name of your plugin
+	 */
+	function plugin_activation_check() {
+
+		if ( version_compare( PHP_VERSION, '5.4', '<' ) ) {
 			deactivate_plugins( basename( __FILE__ ) );
-			wp_die( "PHP 5.3 or higher is required to use this plugin." ); 
-		} 
+			wp_die( "PHP 5.3 or higher is required to use this plugin." );
+		}
 
 		if ( ! class_exists( 'WP_Thumb' ) ) {
 			deactivate_plugins( basename( __FILE__ ) );
-			wp_die( "WP Thumb is required to use this plugin." ); 
+			wp_die( "WP Thumb is required to use this plugin." );
 		}
 
-	} 
+	}
 
 	/**
 	 * Enqueue Retina-fy scripts.
@@ -72,31 +71,32 @@ class WPThumb_Retina {
 	function enqueue_scripts() {
 
 		wp_enqueue_script( 'wpthumb_srcset', $this->plugin_url . '/srcset-polyfill/build/srcset.min.js', false, false, true );
-		
+
 	}
 
 
-	function action( $null, $attachment_id, $size ) { 
-	
+	function image_downsize( $null, $attachment_id, $size ) {
+
 		add_filter( 'wp_get_attachment_image_attributes', $closure = function( $attr, $attachment ) use ( $attachment_id, $size, &$closure ) {
 
 			remove_filter( 'wp_get_attachment_image_attributes', $closure );
-			
+
 			// Prevent firing this filter for all images on the page.
 			if ( $attachment_id != $attachment->ID )
 				return $attr;
 
 			$requested_image = wp_get_attachment_image_src( $attachment_id, $size );
 			$size_args = array( 'width' => $requested_image[1], 'height' => $requested_image[2] );
-			
+
 			$attr['src'] = $requested_image[0];
-			
+
 			$srcset = array();
 
-			if ( $src = $this->get_alt_img_src( $attachment_id,  $size_args, 2 ) )
+			if ( $src = $this->get_alt_img_src( $attachment_id,  $size_args, 2 ) ) {
 				array_push( $srcset, sprintf( '%s 2x', $src ) );
-				
-			$attr['srcset'] = implode( ', ', $srcset );		
+			}
+
+			$attr['srcset'] = implode( ', ', $srcset );
 
 			return $attr;
 
@@ -110,16 +110,17 @@ class WPThumb_Retina {
 	function image_send_to_editor( $html, $attachment_id, $caption, $title, $align, $url, $size, $alt = '' ) {
 
 		$requested_image = wp_get_attachment_image_src( $attachment_id, $size );
+		$size_args       = array( 'width' => $requested_image[1], 'height' => $requested_image[2] );
+		$srcset          = array();
 
 		$attr['src'] = $requested_image[0];
-			
-		$srcset = array();
 
-		if ( $src = $this->get_alt_img_src( $attachment_id,  $size_args, 2 ) )
+		if ( $src = $this->get_alt_img_src( $attachment_id,  $size_args, 2 ) ) {
 			array_push( $srcset, sprintf( '%s 2x', $src ) );
-			
+		}
+
 		$html = preg_replace( '/src="\w*"/', 'src="' . $src . '"', $html );
-		$html = str_replace( '/>', 'srcset=' . implode( ', ', $srcset ) . ' />', $html );
+		$html = str_replace( '/>', 'srcset="' . implode( ', ', $srcset ) . '" />', $html );
 
 		return $html;
 
@@ -127,7 +128,7 @@ class WPThumb_Retina {
 
 	/**
 	 * Get the src for an alternate sized version of an attachment.
-	 * 
+	 *
 	 * @param  string/int $attachment_id
 	 * @param  Array  $size array of width, height args.
 	 * @param  int $multiplier return src for image at x times the size.
@@ -135,20 +136,18 @@ class WPThumb_Retina {
 	 */
 	function get_alt_img_src( $attachment_id, Array $size, $multiplier ) {
 
-		$original_image = @getimagesize( get_attached_file( $attachment_id ) );
-
-		$alt_size = array( 
-			'width'  => $size['width']  * $multiplier,
-			'height' => $size['height'] * $multiplier,
+		$alt_size = array(
+			$size['width']  * $multiplier,
+			$size['height'] * $multiplier,
 		);
-			
-		if ( $original_image[0] < $alt_size['width'] || $original_image[1] < $alt_size['height'] )
-			return null;
 
-		return wpthumb( 
-			get_attached_file( $attachment_id ), 
-			sprintf( 'width=%d&height=%d&crop=1', $alt_size['width'], $alt_size['height'] )
-		);
+		$alt_img = wp_get_attachment_image_src( $attachment_id, $alt_size );
+
+		if ( $alt_img[1] != $alt_size[0] && $alt_img[2] != $alt_size[1] ) {
+			return;
+		}
+
+		return $alt_img[0];
 
 	}
 
@@ -172,8 +171,9 @@ class WPThumb_Retina {
 		}
 
 		return $init;
+
 	}
 
 }
 
-$retina = new WPThumb_Retina();
+$retina = new HM_WordPress_Srcset();
