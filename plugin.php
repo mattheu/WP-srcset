@@ -53,9 +53,9 @@ class HM_WordPress_Srcset {
 	 */
 	function plugin_activation_check() {
 
-		if ( version_compare( PHP_VERSION, '5.4', '<' ) ) {
+		if ( version_compare( PHP_VERSION, '5.3', '<' ) ) {
 			deactivate_plugins( basename( __FILE__ ) );
-			wp_die( "PHP 5.4 or higher is required to use this plugin." );
+			wp_die( "PHP 5.3 or higher is required to use this plugin." );
 		}
 
 		if ( ! class_exists( 'WP_Thumb' ) ) {
@@ -74,30 +74,39 @@ class HM_WordPress_Srcset {
 
 	}
 
-
+	/**
+	 * Filter Image Attributes.
+	 * Uses image downsize action to hook in the attribute filter using a closure.
+	 * This allows us to pass the attachment_id and requested size to the image attribute callback.
+	 *
+	 * @param  null $null
+	 * @param  int $attachment_id
+	 * @param  string/array $size
+	 * @return null
+	 */
 	function image_downsize( $null, $attachment_id, $size ) {
 
-		add_filter( 'wp_get_attachment_image_attributes', $closure = function( $attr, $attachment ) use ( $attachment_id, $size, &$closure ) {
+		$that = $this;
+
+		add_filter( 'wp_get_attachment_image_attributes', $closure = function( $attr, $attachment ) use ( $attachment_id, $size, $that, &$closure ) {
 
 			remove_filter( 'wp_get_attachment_image_attributes', $closure );
 
-			// Prevent firing this filter for all images on the page.
+			// Only do filter for requested image.
 			if ( $attachment_id != $attachment->ID )
 				return $attr;
 
 			$requested_image = wp_get_attachment_image_src( $attachment_id, $size );
-			$size_args = array( 'width' => $requested_image[1], 'height' => $requested_image[2] );
+			$size_args       = array( 'width' => $requested_image[1], 'height' => $requested_image[2] );
+			$srcset          = array();
 
-			$attr['src'] = $requested_image[0];
-
-			$srcset = array();
-
-			foreach ( $this->multipliers as $multiplier ) {
-				if ( $src = $this->get_alt_img_src( $attachment_id,  $size_args, $multiplier ) ) {
+			foreach ( $that->multipliers as $multiplier ) {
+				if ( $src = $that->get_alt_img_src( $attachment_id,  $size_args, $multiplier ) ) {
 					array_push( $srcset, sprintf( '%s %dx', $src, $multiplier ) );
 				}
 			}
 
+			$attr['src']    = $requested_image[0];
 			$attr['srcset'] = implode( ', ', $srcset );
 
 			return $attr;
@@ -107,7 +116,7 @@ class HM_WordPress_Srcset {
 	}
 
 	/**
-	 *	Add retina image attr to content images on insert
+	 *	Add retina image attr to content images when inserting
 	 */
 	function image_send_to_editor( $html, $attachment_id, $caption, $title, $align, $url, $size, $alt = '' ) {
 
@@ -157,12 +166,12 @@ class HM_WordPress_Srcset {
 	}
 
 	/**
-	 * Add to extended_valid_elements for TinyMCE
+	 * Filter to extended_valid_elements for TinyMCE
 	 *
-	 * @param $init assoc. array of TinyMCE options
-	 * @return $init the changed assoc. array
+	 * @param array $init TinyMCE options
+	 * @return $init
 	 */
-	function modify_mce_options( $init ) {
+	function modify_mce_options( Array $init ) {
 
 		// Command separated string of extended elements
 		// I've set it to all - but maybe can modify defaults? If I only set the one I want, doesn't allow any others.
