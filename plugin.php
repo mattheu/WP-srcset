@@ -33,7 +33,7 @@ class HM_WordPress_Srcset {
 	function __construct() {
 
 		$this->plugin_url  = plugin_dir_url( __FILE__ );
-		$this->multipliers = apply_filters( 'hm_wp_srcset', array( 2, 3 ) );
+		$this->multipliers = apply_filters( 'hm_wp_srcset', array( 1, 2 ) );
 
 		register_activation_hook( __FILE__ , array( $this, 'plugin_activation_check' ) );
 
@@ -70,7 +70,7 @@ class HM_WordPress_Srcset {
 	 */
 	function enqueue_scripts() {
 
-		wp_enqueue_script( 'wpthumb_srcset', $this->plugin_url . '/srcset-polyfill/build/srcset.min.js', false, false, true );
+		wp_enqueue_script( 'picturefill', $this->plugin_url . '/picturefill/dist/picturefill.min.js', false, false, true );
 
 	}
 
@@ -88,12 +88,14 @@ class HM_WordPress_Srcset {
 			$requested_image = wp_get_attachment_image_src( $attachment_id, $size );
 			$size_args = array( 'width' => $requested_image[1], 'height' => $requested_image[2] );
 
-			$attr['src'] = $requested_image[0];
+			$attr['src'] = '';
 
 			$srcset = array();
 
-			if ( $src = $this->get_alt_img_src( $attachment_id,  $size_args, 2 ) ) {
-				array_push( $srcset, sprintf( '%s 2x', $src ) );
+			foreach ( $this->multipliers as $multiplier ) {
+				if ( $src = $this->get_alt_img_src( $attachment_id,  $size_args, $multiplier ) ) {
+					array_push( $srcset, sprintf( '%s %dx', $src, $multiplier ) );
+				}
 			}
 
 			$attr['srcset'] = implode( ', ', $srcset );
