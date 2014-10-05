@@ -66,7 +66,7 @@ class HM_WordPress_Srcset {
 	}
 
 	/**
-	 * Enqueue Retina-fy scripts.
+	 * Enqueue polyfill script.
 	 */
 	function enqueue_scripts() {
 
@@ -88,7 +88,7 @@ class HM_WordPress_Srcset {
 			$requested_image = wp_get_attachment_image_src( $attachment_id, $size );
 			$size_args = array( 'width' => $requested_image[1], 'height' => $requested_image[2] );
 
-			$attr['src'] = '';
+			$attr['src'] = $requested_image[0];
 
 			$srcset = array();
 
@@ -117,8 +117,10 @@ class HM_WordPress_Srcset {
 
 		$attr['src'] = $requested_image[0];
 
-		if ( $src = $this->get_alt_img_src( $attachment_id,  $size_args, 2 ) ) {
-			array_push( $srcset, sprintf( '%s 2x', $src ) );
+		foreach ( $this->multipliers as $multiplier ) {
+			if ( $src = $this->get_alt_img_src( $attachment_id,  $size_args, $multiplier ) ) {
+				array_push( $srcset, sprintf( '%s %dx', $src, $multiplier ) );
+			}
 		}
 
 		$html = preg_replace( '/src="\w*"/', 'src="' . $src . '"', $html );
@@ -145,6 +147,7 @@ class HM_WordPress_Srcset {
 
 		$alt_img = wp_get_attachment_image_src( $attachment_id, $alt_size );
 
+		// Return if the alt image is not exactly the requested size.
 		if ( $alt_img[1] != $alt_size[0] && $alt_img[2] != $alt_size[1] ) {
 			return;
 		}

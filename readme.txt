@@ -16,7 +16,7 @@ The new srcset attribute has recently dropped in Chrome and Firefox. It is the s
 
 This plugin will automatically add the srcset attribute to your images if a suitable retina sized image can be found.
 
-It also includes a JS polyfill to ensure that this works on all browsers - not just those that support srcset.
+It also includes a JS polyfill - [Picturefill](https://github.com/scottjehl/picturefill) - to ensure that this works on all browsers - not just those that support srcset. This is about 6.5kb, and can easily be dequeued if you only wish to support browsers that have implemented this functionality.
 
 Note that this plugin does not handle generation of the alternative images, and this should either be done manually or using another plugin. See installation instructions for more information.
 
