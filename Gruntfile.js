@@ -51,8 +51,8 @@ module.exports = function (grunt) {
 			deploy: {
 				options: {
 					plugin_slug: 'high-resoloution-images-with-srcset',
-					build_dir: 'build', //relative path to your build directory
-					assets_dir: 'wp-assets', //relative path to your assets directory (optional).
+					build_dir: 'build',
+					assets_dir: 'wp-assets',
 				},
 			}
 		},
