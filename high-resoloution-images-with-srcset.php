@@ -30,10 +30,13 @@ class HM_WordPress_Srcset {
 	private $plugin_url;
 	private $multipliers;
 
+	private $_attachment_id;
+	private $_size;
+
 	function __construct() {
 
 		$this->plugin_url  = plugin_dir_url( __FILE__ );
-		$this->multipliers = apply_filters( 'hm_wp_srcset', array( 1, 2 ) );
+		$this->multipliers = apply_filters( 'hm_wp_srcset', array( 2 ) );
 
 		register_activation_hook( __FILE__ , array( $this, 'plugin_activation_check' ) );
 
@@ -53,11 +56,6 @@ class HM_WordPress_Srcset {
 	 */
 	function plugin_activation_check() {
 
-		if ( version_compare( PHP_VERSION, '5.3', '<' ) ) {
-			deactivate_plugins( basename( __FILE__ ) );
-			wp_die( "PHP 5.3 or higher is required to use this plugin." );
-		}
-
 		if ( ! class_exists( 'WP_Thumb' ) ) {
 			deactivate_plugins( basename( __FILE__ ) );
 			wp_die( "WP Thumb is required to use this plugin." );
@@ -76,8 +74,8 @@ class HM_WordPress_Srcset {
 
 	/**
 	 * Filter Image Attributes.
-	 * Uses image downsize action to hook in the attribute filter using a closure.
-	 * This allows us to pass the attachment_id and requested size to the image attribute callback.
+	 * Use Image downsize to store the ID & requested size.
+	 * This works because image_dowsize action is fired just before the attributes filter
 	 *
 	 * @param  null $null
 	 * @param  int $attachment_id
@@ -86,32 +84,45 @@ class HM_WordPress_Srcset {
 	 */
 	function image_downsize( $null, $attachment_id, $size ) {
 
-		$that = $this;
+		$this->_attachment_id = $attachment_id;
+		$this->_size = $size;
 
-		add_filter( 'wp_get_attachment_image_attributes', $closure = function( $attr, $attachment ) use ( $attachment_id, $size, $that, &$closure ) {
+		add_filter( 'wp_get_attachment_image_attributes', array( $this, 'image_attributes' ), 10, 2 );
 
-			remove_filter( 'wp_get_attachment_image_attributes', $closure );
+	}
 
-			// Only do filter for requested image.
-			if ( $attachment_id != $attachment->ID )
-				return $attr;
+	/**
+	 * Filter image attributes and add the srcset attr.
+	 *
+	 * @param  array $attr
+	 * @param  WP_Post $attachment
+	 * @return array attributes
+	 */
+	function image_attributes( $attr, $attachment ) {
 
-			$requested_image = wp_get_attachment_image_src( $attachment_id, $size );
-			$size_args       = array( 'width' => $requested_image[1], 'height' => $requested_image[2] );
-			$srcset          = array();
+		// Unhook to prevent setting size property again.
+		remove_filter( 'image_downsize',  array( $this, 'image_downsize' ), 100, 3 );
 
-			foreach ( $that->multipliers as $multiplier ) {
-				if ( $src = $that->get_alt_img_src( $attachment_id,  $size_args, $multiplier ) ) {
-					array_push( $srcset, sprintf( '%s %dx', $src, $multiplier ) );
-				}
-			}
-
-			$attr['src']    = $requested_image[0];
-			$attr['srcset'] = implode( ', ', $srcset );
-
+		// Only do filter for requested image.
+		if ( $this->_attachment_id && $this->_size && $this->_attachment_id != $attachment->ID )
 			return $attr;
 
-		}, 10, 2 );
+		$requested_image = wp_get_attachment_image_src( $this->_attachment_id, $this->_size );
+		$size_args       = array( 'width' => $requested_image[1], 'height' => $requested_image[2] );
+		$srcset          = array();
+
+		foreach ( $this->multipliers as $multiplier ) {
+			if ( $src = $this->get_alt_img_src( $this->_attachment_id, $size_args, $multiplier ) ) {
+				array_push( $srcset, sprintf( '%s %dx', $src, $multiplier ) );
+			}
+		}
+
+		$attr['src']    = $requested_image[0];
+		$attr['srcset'] = implode( ', ', $srcset );
+
+		add_filter( 'image_downsize',  array( $this, 'image_downsize' ), 100, 3 );
+
+		return $attr;
 
 	}
 

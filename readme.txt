@@ -4,7 +4,7 @@ Contributors: mattheu
 Tags: srcset, retina, images, high-res
 Requires at least: 4.0
 Tested up to: 4.0
-Stable tag: 1.0.1
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -16,11 +16,9 @@ The new srcset attribute has recently dropped in Chrome and Firefox. It is the s
 
 This plugin will automatically add the srcset attribute to your images if a suitable retina sized image can be found.
 
-It also includes a JS polyfill - [Picturefill](https://github.com/scottjehl/picturefill) - to ensure that this works on all browsers - not just those that support srcset. This is about 6.5kb, and can easily be dequeued if you only wish to support browsers that have implemented this functionality.
+It also includes a JS polyfill - [Picturefill](https://github.com/scottjehl/picturefill) - to ensure that this works on all browsers - not just those that support srcset. This is about 6.5kb, and can easily be dequeued if you are already loading this or wish to only support browsers that have implemented this functionality.
 
 This plugin does not handle generation of the alternative images, and this should either be done manually or using another plugin. See installation instructions for more information.
-
-**This  plugin requires PHP 5.3**
 
 == Installation ==
 
@@ -34,5 +32,7 @@ Example of how to register high resoloution versions of an image.
 add_image_size( 'small-2x', '200', '200' );`
 
  == Changelog ==
+
+1.1 - Refactor to simplify & add PHP 5.2 support.
 
 1.0 - Initial release. High res images for WordPress using srcset attribute and srcset-polyfill
