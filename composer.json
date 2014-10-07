@@ -1,0 +1,24 @@
+{
+  "name":"humanmade/high-resoloution-images-with-srcset",
+  "description":"Automatic high resolution retina images using srcset.",
+  "homepage":"https://github.com/humanmade/wordpress-srcset",
+  "keywords":[
+    "wordpress", "retina", "images", "srcset", "picturefill"
+  ],
+  "license":"GPL-2.0+",
+  "authors":[
+    {
+      "name":"Human Made Limited",
+      "email":"support@humanmade.co.uk",
+      "homepage":"http://hmn.md/"
+    }
+  ],
+  "autoload":{
+    "files":[
+      "high-resoloution-images-with-srcset.php"
+    ]
+  },
+  "require": {
+    "composer/installers": "~1.0"
+   }
+}

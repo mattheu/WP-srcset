@@ -33,7 +33,7 @@ class HM_WordPress_Srcset {
 	function __construct() {
 
 		$this->plugin_url  = plugin_dir_url( __FILE__ );
-		$this->multipliers = apply_filters( 'hm_wp_srcset', array( 1, 2 ) );
+		$this->multipliers = apply_filters( 'hm_wp_srcset', array( 2 ) );
 
 		register_activation_hook( __FILE__ , array( $this, 'plugin_activation_check' ) );
 
