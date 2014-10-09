@@ -1,11 +1,11 @@
 {
-  "name": "wordpress-srcset",
-  "version": "1.0.1",
+  "name": "wp-srcset",
+  "version": "1.0.3",
   "description": "Very simple plugin to get retina images on your WordPress site. Automatically load high resoloution images using the new srcset attribute.",
   "main": "plugin.php",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mattheu/wordpress-srcset"
+    "url": "https://github.com/mattheu/wp-srcset"
   },
   "keywords": [
     "wordpress",
@@ -14,9 +14,9 @@
   "author": "Matthew Haines-Young",
   "license": "GPLv2",
   "bugs": {
-    "url": "https://github.com/mattheu/wordpress-srcset/issues"
+    "url": "https://github.com/mattheu/wp-srcset/issues"
   },
-  "homepage": "https://github.com/mattheu/wordpress-srcset",
+  "homepage": "https://github.com/mattheu/wp-srcset",
   "devDependencies": {
     "grunt": "^0.4.5",
     "grunt-contrib-clean": "^0.6.0",

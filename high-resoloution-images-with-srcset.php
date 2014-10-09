@@ -3,7 +3,7 @@
 /*
 Plugin Name: WP Srcset
 Description: Automatic high resolution retina images using srcset.
-Version: 1.0.1
+Version: 1.0.2
 Author: Human Made Limited
 Author URI: http://hmn.md/
 */
