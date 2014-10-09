@@ -1,7 +1,7 @@
 <?php
 
 /*
-Plugin Name: WPThumb Srcset
+Plugin Name: WP Srcset
 Description: Automatic high resolution retina images using srcset.
 Version: 1.0.1
 Author: Human Made Limited
@@ -25,7 +25,7 @@ Author URI: http://hmn.md/
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-class HM_WordPress_Srcset {
+class HM_WP_Srcset {
 
 	private $plugin_url;
 	private $multipliers;
@@ -90,11 +90,12 @@ class HM_WordPress_Srcset {
 
 		add_filter( 'wp_get_attachment_image_attributes', $closure = function( $attr, $attachment ) use ( $attachment_id, $size, $that, &$closure ) {
 
-			remove_filter( 'wp_get_attachment_image_attributes', $closure );
-
 			// Only do filter for requested image.
 			if ( $attachment_id != $attachment->ID )
 				return $attr;
+
+			remove_filter( 'image_downsize', array( $that, 'image_downsize' ), 100, 3 );
+			remove_filter( 'wp_get_attachment_image_attributes', $closure );
 
 			$requested_image = wp_get_attachment_image_src( $attachment_id, $size );
 			$size_args       = array( 'width' => $requested_image[1], 'height' => $requested_image[2] );
@@ -108,6 +109,8 @@ class HM_WordPress_Srcset {
 
 			$attr['src']    = $requested_image[0];
 			$attr['srcset'] = implode( ', ', $srcset );
+
+			add_filter( 'image_downsize', array( $that, 'image_downsize' ), 100, 3 );
 
 			return $attr;
 
@@ -190,4 +193,4 @@ class HM_WordPress_Srcset {
 
 }
 
-$retina = new HM_WordPress_Srcset();
+$retina = new HM_WP_Srcset();
