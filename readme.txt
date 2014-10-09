@@ -12,7 +12,7 @@ Very simple plugin to get retina images on your WordPress site. Automatically lo
 
 == Description ==
 
-The new srcset attribute has recently dropped in Chrome and Firefox. It is the simplest way to get retina ready images on your site.
+The new srcset attribute has recently landed in Chrome and Firefox. It is the simplest way to get retina ready images on your site.
 
 This plugin will automatically add the srcset attribute to your images if a suitable retina sized image can be found.
 
