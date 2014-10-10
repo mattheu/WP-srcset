@@ -33,13 +33,14 @@ class HM_WP_Srcset {
 	function __construct() {
 
 		$this->plugin_url  = plugin_dir_url( __FILE__ );
-		$this->multipliers = apply_filters( 'hm_wp_srcset', array( 1, 2 ) );
+		$this->multipliers = apply_filters( 'hm_wp_srcset', array( 2 ) );
 
 		register_activation_hook( __FILE__ , array( $this, 'plugin_activation_check' ) );
 
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 
 		add_filter( 'image_downsize',  array( $this, 'image_downsize' ), 100, 3 );
+		add_filter( 'get_avatar',      array( $this, 'get_avatar' ), 100, 5 );
 
 		add_filter( 'image_send_to_editor', array( $this, 'image_send_to_editor' ), 100, 8 );
 		add_filter( 'tiny_mce_before_init', array( $this, 'modify_mce_options' ), 100 );
@@ -140,6 +141,38 @@ class HM_WP_Srcset {
 
 		return $html;
 
+	}
+
+	/**
+	 * Add srcset to avatars.
+	 *
+	 * @param  string     $avatar
+	 * @param  int|string $id_or_email
+	 * @param  int        $size
+	 * @param  string     $default
+	 * @param  string     $alt
+	 * @return string
+	 */
+	function get_avatar( $avatar, $id_or_email, $size, $default, $alt ) {
+
+		remove_filter( 'get_avatar', array( $this, 'get_avatar' ), 100, 5 );
+
+		$srcset = array();
+		foreach ( $this->multipliers as $multiplier ) {
+			$high_res_avatar = get_avatar( $id_or_email, $size * 2, $default, $alt );
+			if ( preg_match( '!src=["|\'](.+?)["|\']!', $high_res_avatar, $matches ) ) {
+				$srcset[] = sprintf( '%s %sx', $matches[1], $multiplier );
+			}
+		}
+
+		if ( ! empty( $srcset ) ) {
+			$srcset = implode( ', ', $srcset );
+			$avatar = str_replace( '/>', ' srcset="' . $srcset . '" />', $avatar );
+		}
+
+		add_filter( 'get_avatar', array( $this, 'get_avatar' ), 100, 5 );
+
+		return $avatar;
 	}
 
 	/**
