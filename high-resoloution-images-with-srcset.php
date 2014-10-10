@@ -59,11 +59,6 @@ class HM_WP_Srcset {
 			wp_die( "PHP 5.3 or higher is required to use this plugin." );
 		}
 
-		if ( ! class_exists( 'WP_Thumb' ) ) {
-			deactivate_plugins( basename( __FILE__ ) );
-			wp_die( "WP Thumb is required to use this plugin." );
-		}
-
 	}
 
 	/**
