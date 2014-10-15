@@ -35,8 +35,6 @@ class HM_WP_Srcset {
 		$this->plugin_url  = plugin_dir_url( __FILE__ );
 		$this->multipliers = apply_filters( 'hm_wp_srcset', array( 2 ) );
 
-		add_image_size( 'test', 100, 100, true );
-
 		register_activation_hook( __FILE__ , array( $this, 'plugin_activation_check' ) );
 
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
