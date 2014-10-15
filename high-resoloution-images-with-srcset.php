@@ -35,6 +35,8 @@ class HM_WP_Srcset {
 		$this->plugin_url  = plugin_dir_url( __FILE__ );
 		$this->multipliers = apply_filters( 'hm_wp_srcset', array( 2 ) );
 
+		add_image_size( 'test', 100, 100, true );
+
 		register_activation_hook( __FILE__ , array( $this, 'plugin_activation_check' ) );
 
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
@@ -44,6 +46,10 @@ class HM_WP_Srcset {
 
 		add_filter( 'image_send_to_editor', array( $this, 'image_send_to_editor' ), 100, 8 );
 		add_filter( 'tiny_mce_before_init', array( $this, 'modify_mce_options' ), 100 );
+
+		if ( defined( 'HM_WP_SRCSET_ADD_2X_IMAGE_SIZES' ) && HM_WP_SRCSET_ADD_2X_IMAGE_SIZES ) {
+			$this->add_2x_image_sizes();
+		}
 
 	}
 
@@ -66,7 +72,7 @@ class HM_WP_Srcset {
 	 */
 	function enqueue_scripts() {
 
-		wp_enqueue_script( 'picturefill', $this->plugin_url . '/picturefill/dist/picturefill.min.js', false, false, true );
+		wp_enqueue_script( 'picturefill', $this->plugin_url . 'picturefill/dist/picturefill.min.js', false, false, true );
 
 	}
 
@@ -103,8 +109,10 @@ class HM_WP_Srcset {
 				}
 			}
 
-			$attr['src']    = $requested_image[0];
-			$attr['srcset'] = implode( ', ', $srcset );
+			if ( ! empty( $srcset ) ) {
+				$attr['src']    = $requested_image[0];
+				$attr['srcset'] = implode( ', ', $srcset );
+			}
 
 			add_filter( 'image_downsize', array( $that, 'image_downsize' ), 100, 3 );
 
@@ -217,6 +225,27 @@ class HM_WP_Srcset {
 
 		return $init;
 
+	}
+
+	function add_2x_image_sizes() {
+		global $_wp_additional_image_sizes;
+		foreach ( get_intermediate_image_sizes() as $size ) {
+
+			if ( in_array( $size, array( 'thumbnail', 'medium', 'large' ) ) ) {
+				$args = array(
+					'width'  => get_option( 'thumbnail_size_w' ),
+					'height' => get_option( 'thumbnail_size_h' ),
+					'crop'   => get_option( 'thumbnail_size_crop' )
+				);
+			} elseif ( isset( $_wp_additional_image_sizes[ $size ] ) ) {
+				$args = $_wp_additional_image_sizes[ $size ];
+			} else {
+				continue;
+			}
+
+			add_image_size( $size . '2x', $args['width'] * 2, $args['height'] * 2, $args['crop'] );
+
+		}
 	}
 
 }
