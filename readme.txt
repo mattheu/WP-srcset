@@ -12,13 +12,15 @@ Very simple plugin to get retina images on your WordPress site. Automatically lo
 
 == Description ==
 
-The new srcset attribute has recently dropped in Chrome and Firefox. It is the simplest way to get retina ready images on your site.
+The new srcset attribute has recently landed in Chrome and Firefox. It is the simplest way to get retina ready images on your site.
 
 This plugin will automatically add the srcset attribute to your images if a suitable retina sized image can be found.
 
-It also includes a JS polyfill - [Picturefill](https://github.com/scottjehl/picturefill) - to ensure that this works on all browsers - not just those that support srcset. This is about 6.5kb, and can easily be dequeued if you are already loading this or wish to only support browsers that have implemented this functionality.
+It also includes a JS polyfill - [Picturefill](https://github.com/scottjehl/picturefill) - to ensure that this works on all browsers - not just those that support srcset. This is about 6.5kb, and can easily be dequeued if you only wish to support browsers that have implemented this functionality.
 
 This plugin does not handle generation of the alternative images, and this should either be done manually or using another plugin. See installation instructions for more information.
+
+**This  plugin requires PHP 5.3**
 
 == Installation ==
 
