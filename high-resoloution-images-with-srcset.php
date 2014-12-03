@@ -1,7 +1,7 @@
 <?php
 
 /*
-Plugin Name: WPThumb Srcset
+Plugin Name: x WordPress Srcset
 Description: Automatic high resolution retina images using srcset.
 Version: 1.0.1
 Author: Human Made Limited
@@ -30,41 +30,23 @@ class HM_WordPress_Srcset {
 	private $plugin_url;
 	private $multipliers;
 
-	private $_attachment_id;
-	private $_size;
-
 	function __construct() {
 
 		$this->plugin_url  = plugin_dir_url( __FILE__ );
-		$this->multipliers = apply_filters( 'hm_wp_srcset', array( 2 ) );
+		$this->multipliers = apply_filters( 'hm_wp_srcset_multipliers', array( 2 ) );
 
 		register_activation_hook( __FILE__ , array( $this, 'plugin_activation_check' ) );
 
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 
-		add_filter( 'image_downsize',  array( $this, 'image_downsize' ), 100, 3 );
-
-		add_filter( 'image_send_to_editor', array( $this, 'image_send_to_editor' ), 100, 8 );
-		add_filter( 'tiny_mce_before_init', array( $this, 'modify_mce_options' ), 100 );
-
-	}
-
-	/**
-	 * plugin_activation_check()
-	 *
-	 * Replace "plugin" with the name of your plugin
-	 */
-	function plugin_activation_check() {
-
-		if ( ! class_exists( 'WP_Thumb' ) ) {
-			deactivate_plugins( basename( __FILE__ ) );
-			wp_die( "WP Thumb is required to use this plugin." );
-		}
+		add_filter( 'wp_get_attachment_image_attributes', array( $this, 'image_attributes' ), 10, 3 );
 
 	}
 
 	/**
 	 * Enqueue polyfill script.
+	 *
+	 * @return null
 	 */
 	function enqueue_scripts() {
 
@@ -73,21 +55,17 @@ class HM_WordPress_Srcset {
 	}
 
 	/**
-	 * Filter Image Attributes.
-	 * Use Image downsize to store the ID & requested size.
-	 * This works because image_dowsize action is fired just before the attributes filter
+	 * Plugin requires WP 4.1
+	 * or die.
 	 *
-	 * @param  null $null
-	 * @param  int $attachment_id
-	 * @param  string/array $size
 	 * @return null
 	 */
-	function image_downsize( $null, $attachment_id, $size ) {
+	function plugin_activation_check() {
 
-		$this->_attachment_id = $attachment_id;
-		$this->_size = $size;
-
-		add_filter( 'wp_get_attachment_image_attributes', array( $this, 'image_attributes' ), 10, 2 );
+		if ( version_compare( get_bloginfo('version'), '4.1-beta', '<=' ) ) {
+			deactivate_plugins( basename( __FILE__ ) );
+			wp_die( "Plugin requires WordPress version 4.1." );
+		}
 
 	}
 
@@ -98,29 +76,20 @@ class HM_WordPress_Srcset {
 	 * @param  WP_Post $attachment
 	 * @return array attributes
 	 */
-	function image_attributes( $attr, $attachment ) {
+	function image_attributes( $attr, $attachment, $size ) {
 
-		// Unhook to prevent setting size property again.
-		remove_filter( 'image_downsize',  array( $this, 'image_downsize' ), 100, 3 );
-
-		// Only do filter for requested image.
-		if ( $this->_attachment_id && $this->_size && $this->_attachment_id != $attachment->ID )
-			return $attr;
-
-		$requested_image = wp_get_attachment_image_src( $this->_attachment_id, $this->_size );
+		$requested_image = wp_get_attachment_image_src( $attachment->ID, $size );
 		$size_args       = array( 'width' => $requested_image[1], 'height' => $requested_image[2] );
 		$srcset          = array();
 
 		foreach ( $this->multipliers as $multiplier ) {
-			if ( $src = $this->get_alt_img_src( $this->_attachment_id, $size_args, $multiplier ) ) {
+			if ( $src = $this->get_alt_img_src( $attachment->ID, $size_args, $multiplier ) ) {
 				array_push( $srcset, sprintf( '%s %dx', $src, $multiplier ) );
 			}
 		}
 
 		$attr['src']    = $requested_image[0];
 		$attr['srcset'] = implode( ', ', $srcset );
-
-		add_filter( 'image_downsize',  array( $this, 'image_downsize' ), 100, 3 );
 
 		return $attr;
 
@@ -173,29 +142,6 @@ class HM_WordPress_Srcset {
 		}
 
 		return $alt_img[0];
-
-	}
-
-	/**
-	 * Filter to extended_valid_elements for TinyMCE
-	 *
-	 * @param array $init TinyMCE options
-	 * @return $init
-	 */
-	function modify_mce_options( Array $init ) {
-
-		// Command separated string of extended elements
-		// I've set it to all - but maybe can modify defaults? If I only set the one I want, doesn't allow any others.
-		$ext = 'img[*]';
-
-		// Add to extended_valid_elements if it alreay exists
-		if ( isset( $init['extended_valid_elements'] ) ) {
-			$init['extended_valid_elements'] .= ',' . $ext;
-		} else {
-			$init['extended_valid_elements'] = $ext;
-		}
-
-		return $init;
 
 	}
 
