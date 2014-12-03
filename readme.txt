@@ -33,6 +33,6 @@ add_image_size( 'small-2x', '200', '200' );`
 
  == Changelog ==
 
-1.1 - Refactor to simplify & add PHP 5.2 support.
+1.1 - Simplify - following changes in core that come with WP 4.1. Adds PHP 5.2 support.
 
 1.0 - Initial release. High res images for WordPress using srcset attribute and srcset-polyfill
