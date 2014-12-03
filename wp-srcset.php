@@ -1,7 +1,7 @@
 <?php
 
 /*
-Plugin Name: x WordPress Srcset
+Plugin Name: WordPress Srcset
 Description: Automatic high resolution retina images using srcset.
 Version: 1.0.1
 Author: Human Made Limited
