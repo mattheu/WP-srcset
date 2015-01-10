@@ -20,8 +20,6 @@ It also includes a JS polyfill - [Picturefill](https://github.com/scottjehl/pict
 
 This plugin does not handle generation of the alternative images, and this should either be done manually or using another plugin. See installation instructions for more information.
 
-**This  plugin requires PHP 5.3**
-
 == Installation ==
 
 There are 2 ways to use the plugin:
@@ -35,6 +33,10 @@ add_image_size( 'small-2x', '200', '200' );`
 
  == Changelog ==
 
-1.1 - Simplify - following changes in core that come with WP 4.1. Adds PHP 5.2 support.
+**1.1**
+- Update for WordPress 4.1 - simplify some of the workarounds following updates to WP core.
+- Adds PHP 5.2 support.
+- Update Picturefill.
 
-1.0 - Initial release. High res images for WordPress using srcset attribute and srcset-polyfill
+**1.0**
+- Initial release. High res images for WordPress using srcset attribute and srcset-polyfill
