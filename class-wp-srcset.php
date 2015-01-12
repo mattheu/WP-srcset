@@ -16,9 +16,18 @@ class WP_Srcset {
 	 */
 	private $resolutions = array( 2 );
 
+	private static $instance = null;
+
+	public static function get_instance() {
+		if ( null == self::$instance ) {
+			self::$instance = new self;
+		}
+		return self::$instance;
+	}
+
 	function __construct() {
 
-		$this->plugin_url  = plugin_dir_url( __FILE__ );
+		$this->plugin_url = plugin_dir_url( __FILE__ );
 
 		/**
 		 * Allow filtering of supported resolutions.
@@ -29,6 +38,7 @@ class WP_Srcset {
 
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 
+		add_action( 'init', array( $this, 'register_2x_image_sizes' ), 1000 );
 		add_filter( 'wp_get_attachment_image_attributes', array( $this, 'filter_image_attributes' ), 10, 3 );
 		add_filter( 'image_send_to_editor', array( $this, 'filter_image_send_to_editor' ), 10, 8 );
 
@@ -72,18 +82,17 @@ class WP_Srcset {
 	 */
 	function filter_image_attributes( $attr, $attachment, $size ) {
 
-		$requested_image = wp_get_attachment_image_src( $attachment->ID, $size );
-		$size_args       = array( 'width' => $requested_image[1], 'height' => $requested_image[2] );
-		$srcset          = array();
+		$srcset = array();
 
 		foreach ( $this->resolutions as $multiplier ) {
-			if ( $src = $this->get_alt_img_src( $attachment->ID, $size_args, $multiplier ) ) {
+			if ( $src = $this->get_alt_img_src( $attachment->ID, $size, $multiplier ) ) {
 				array_push( $srcset, sprintf( '%s %dx', $src, $multiplier ) );
 			}
 		}
 
-		$attr['src']    = $requested_image[0];
-		$attr['srcset'] = implode( ', ', $srcset );
+		if ( ! empty( $srcset ) ) {
+			$attr['srcset'] = implode( ', ', $srcset );
+		}
 
 		return $attr;
 
@@ -94,18 +103,18 @@ class WP_Srcset {
 	 */
 	function filter_image_send_to_editor( $html, $attachment_id, $caption, $title, $align, $url, $size, $alt = '' ) {
 
-		$requested_image = wp_get_attachment_image_src( $attachment_id, $size );
-		$size_args       = array( 'width' => $requested_image[1], 'height' => $requested_image[2] );
-		$src             = $requested_image[0];
-		$srcset          = array();
+		$srcset = array();
 
 		foreach ( $this->resolutions as $multiplier ) {
-			if ( $src = $this->get_alt_img_src( $attachment_id,  $size_args, $multiplier ) ) {
+			if ( $src = $this->get_alt_img_src( $attachment->ID, $size, $multiplier ) ) {
 				array_push( $srcset, sprintf( '%s %dx', $src, $multiplier ) );
 			}
 		}
 
-		$html = preg_replace( '/src="\w*"/', 'src="' . $src . '"', $html );
+		if ( ! empty( $srcset ) ) {
+			$attr['srcset'] = implode( ', ', $srcset );
+		}
+
 		$html = str_replace( '/>', 'srcset="' . implode( ', ', $srcset ) . '" />', $html );
 
 		return $html;
@@ -120,17 +129,37 @@ class WP_Srcset {
 	 * @param  int $multiplier return src for image at x times the size.
 	 * @return string src.
 	 */
-	function get_alt_img_src( $attachment_id, Array $size, $multiplier ) {
+	function get_alt_img_src( $attachment_id, $size, $multiplier ) {
 
-		$alt_size = array(
-			$size['width']  * $multiplier,
-			$size['height'] * $multiplier,
-		);
+		$requested_image = wp_get_attachment_image_src( $attachment_id, $size );
 
-		$alt_img = wp_get_attachment_image_src( $attachment_id, $alt_size );
+		if ( is_string( $size ) ) {
+
+			$alt_img = wp_get_attachment_image_src( $attachment_id, $size . $multiplier . 'x' );
+
+		} else {
+
+			$size_args = array(
+				'width' => $requested_image[1] * $multiplier,
+				'height' => $requested_image[2] * $multiplier
+			);
+
+			if ( isset( $size[2] ) ) {
+				$size_args['crop'] = $size[2];
+			} elseif ( $size['crop'] ) {
+				$size_args['crop'] = $size['crop'];
+			}
+
+			$alt_img = wp_get_attachment_image_src( $attachment_id, $size_args );
+
+		}
 
 		// Return if the alt image is not exactly the requested size.
-		if ( $alt_img[1] != $alt_size[0] || $alt_img[2] != $alt_size[1] ) {
+		// TODO - handle rounding errors.
+		if (
+			$alt_img[1] != $requested_image[1] * $multiplier
+			|| $alt_img[2] != $requested_image[2] * $multiplier
+		) {
 			return;
 		}
 
@@ -138,4 +167,37 @@ class WP_Srcset {
 
 	}
 
+	function register_2x_image_sizes() {
+
+		global $_wp_additional_image_sizes;
+
+		foreach ( get_intermediate_image_sizes() as $size ) {
+
+			if ( false !== strpos( $size, '2x' ) ) {
+				continue;
+			}
+
+			if ( in_array( $size, array( 'thumbnail', 'medium', 'large' ) ) ) {
+				$args = array(
+					'width'  => get_option( 'thumbnail_size_w' ),
+					'height' => get_option( 'thumbnail_size_h' ),
+					'crop'   => get_option( 'thumbnail_crop' )
+				);
+			} elseif ( isset( $_wp_additional_image_sizes[ $size ] ) ) {
+				$args = $_wp_additional_image_sizes[ $size ];
+			} else {
+				continue;
+			}
+
+			foreach ( $this->resolutions as $multiplier ) {
+				add_image_size(
+					$size . $multiplier . 'x',
+					$args['width'] * $multiplier,
+					$args['height'] * $multiplier,
+					$args['crop']
+				);
+			}
+
+		}
+	}
 }

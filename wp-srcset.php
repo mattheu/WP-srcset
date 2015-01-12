@@ -1,14 +1,4 @@
 <?php
-
-add_action( 'wp_head', function() {
-
-	echo wp_get_attachment_image( 7, 'thumbnail' );
-	echo wp_get_attachment_image( 7, 'medium' );
-	echo wp_get_attachment_image( 7, 'large' );
-	echo wp_get_attachment_image( 7, 'full' );
-
-} );
-
 /*
 Plugin Name: WP Srcset
 Description: Automatic high resolution retina images using srcset.
@@ -36,6 +26,6 @@ Author URI: http://matth.eu/
 
 require_once( __DIR__ . '/class-wp-srcset.php' );
 
-$retina = new WP_Srcset();
+$retina = WP_Srcset::get_instance();
 
 register_activation_hook( __FILE__ , array( $retina, 'plugin_activation_check' ) );
